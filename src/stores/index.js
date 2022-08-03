@@ -1,6 +1,7 @@
 import ProductsStore from './products';
 import CartStore from './cart';
 import CounterStore from './counter';
+import LineChartStore from './lineChart';
 
 // 集中管理store的写法一
 class RootStore {
@@ -8,6 +9,7 @@ class RootStore {
         this.productsStore = new ProductsStore(this);
         this.cartStore = new CartStore(this);
         this.counterStore = new CounterStore(this);
+        this.lineChartStore = new LineChartStore(this);
     }
 }
 
