@@ -68,6 +68,8 @@ export default class LineChartStore {
                             fontSize: 12,
                         },
                     },
+                    min: -120,
+                    max: -20,
                 },
             ],
             tooltip: {
@@ -112,7 +114,8 @@ export default class LineChartStore {
     get_frames() {
         this.interval = setInterval(() => {
             this.get_frame();
-        }, 10);
+            console.log("interval...");
+        }, 100);
     }
 
     clearTimeOut() {

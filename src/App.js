@@ -1,24 +1,29 @@
 import React from 'react';
+import {
+  BrowserRouter,
+  Switch,
+  Route,
+  Link
+} from "react-router-dom";
 // import logo from './logo.svg';
 // import './App.css';
-import Products from './components/Products';
-import Cart from './components/Cart';
 import Counter from './components/Counter';
 import LineChart from './components/LineChart';
+import ShoppingCart from './components/ShoppingCart';
 
 function App() {
   return (
-    <div className="App">
-      <LineChart/>
-      <hr/>
-      <h1>Shopping Cart Example.</h1>
-      <hr/>
-      <Products/>
-      <hr/>
-      <Cart/>
-      <hr/>
-      <Counter/>
-    </div>
+    <BrowserRouter>
+      <div className="App">
+        <Link to="./cart">购物车案例</Link> &nbsp;
+        <Link to="./counter">计数器案例</Link>
+      </div>
+      <Switch>
+        <Route path="/" component={LineChart}></Route>
+        <Route path="/cart" component={ShoppingCart}></Route>
+        <Route path="/counter" component={Counter}></Route>
+      </Switch>
+    </BrowserRouter>
   );
 }
 

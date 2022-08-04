@@ -47,7 +47,7 @@ class BaseEchart extends React.Component{
 
     componentWillUpdate() {
         this.drawChart();
-        console.log("BaseChart will update...");
+        // console.log("BaseChart will update...");
     }
     
     componentDidUpdate() {
