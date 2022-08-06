@@ -10,13 +10,13 @@ import {
     // when,
     // reaction,
 } from 'mobx';
+import { observer, inject } from 'mobx-react';
 import * as echarts from "echarts";
 
-class BaseEchart extends React.Component{
+const BaseEchartAppend = inject('lineChartStore')(observer(class BaseEchartAppend extends React.Component{
     charRef = React.createRef();
     chartInstance = null;
-    // cnt = 0;
-
+    
     constructor(props) {
         super(props);
 
@@ -45,16 +45,15 @@ class BaseEchart extends React.Component{
         this.drawChart();
     }
 
-    componentWillUpdate() {
-        this.drawChart();
-        // console.log("BaseChart will update...");
-    }
-    
     componentDidUpdate() {
-        // console.log("BaseChart updated...");
+        // this.drawChart();
+        // console.log("BaseChart will update...");
+        const { lineChartStore } = this.props;
+        lineChartStore.get_piece();
     }
 
     render() {
+        // console.log("append render...");
         this.drawChart();
         return (
             <div style={{ textAlign: "center" }}>
@@ -68,6 +67,6 @@ class BaseEchart extends React.Component{
             </div>
         )
     }
-};
+}));
 
-export default BaseEchart;
+export default BaseEchartAppend;
