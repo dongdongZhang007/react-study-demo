@@ -23,7 +23,7 @@ class BaseEchart extends React.Component{
         makeObservable(this, {
             charRef: observable,
             chartInstance: observable,
-            drawChart: action.bound,
+            // drawChart: action.bound,
             setChartInstance: action.bound,
         });
     }
@@ -36,17 +36,19 @@ class BaseEchart extends React.Component{
 
     drawChart = () => {
         if(this.chartInstance) {
+            // console.time("drawChart");
             this.chartInstance.setOption(this.props.chartOpt);
+            // console.timeEnd("drawChart");
         }
     }
 
     componentDidMount() {
         this.setChartInstance();
-        this.drawChart();
+        // this.drawChart();
     }
 
     componentWillUpdate() {
-        this.drawChart();
+        // this.drawChart();
         // console.log("BaseChart will update...");
     }
     
@@ -55,6 +57,7 @@ class BaseEchart extends React.Component{
     }
 
     render() {
+        // console.log("render...");
         this.drawChart();
         return (
             <div style={{ textAlign: "center" }}>

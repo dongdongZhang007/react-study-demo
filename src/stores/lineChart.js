@@ -9,6 +9,8 @@ import Long from 'long';
 import {
     create_frame,
     create_piece,
+    extract,
+    INTVL,
 } from '../api/lineChart';
 const SCALE_X = 1;
 const SCALE_Y = 100;
@@ -19,12 +21,14 @@ export default class LineChartStore {
     rootStore;
     xData = [];
     yData = [];
-    xTmpData = [];
-    yTmpData = [];
-    xData1 = [];
-    yData1 = [];
+    xTmpData = []; // 临时存储备份
+    yTmpData = []; // 临时存储备份
+    xData1 = []; // 抽取图表所使用的xData
+    yData1 = []; // 抽取图表所使用的yData
     index_of_freq = -1;
+    ext_type = 'max'; // 抽取类型
     pieceData;
+    cnt = 1;
 
     constructor(rootStore) {
         this.rootStore = rootStore;
@@ -41,6 +45,7 @@ export default class LineChartStore {
             yData: observable,
             xData1: observable,
             yData1: observable,
+            ext_type: observable,
             interval: observable,
             pieceData: observable,
             getChartOpt: computed,
@@ -49,6 +54,7 @@ export default class LineChartStore {
             get_frames: action.bound,
             clearTimeOut: action.bound,
             parse_data: action.bound,
+            set_ext_type: action.bound, // 设置数据抽样类型
         });
     }
 
@@ -100,6 +106,7 @@ export default class LineChartStore {
                     },
                     min: -120,
                     max: -20,
+                    // sampling: 'max',//降采样策略,
                 },
             ],
             tooltip: {
@@ -175,6 +182,7 @@ export default class LineChartStore {
                     },
                     // min: -120,
                     // max: -20,
+                    // sampling: 'max',//降采样策略,
                 },
             ],
             tooltip: {
@@ -209,8 +217,16 @@ export default class LineChartStore {
             // console.log("cb1...");
             runInAction(() => {
                 // console.log("cb2...");
-                this.xData = x;
-                this.yData = y;
+                // 源数据
+                // this.xData = x;
+                // this.yData = y;
+
+                // 添加抽取，必须保留第一个点和最后一个点
+                let valid_left = 1, valid_right = x.length - 2;
+                let ret = extract(x, y, INTVL, valid_left, valid_right, this.ext_type);
+                // console.log(ret);
+                this.xData = [x[0], ...ret.ext_x_data, x[x.length-1]];
+                this.yData = [y[0], ...ret.ext_y_data, y[y.length-1]];
             });
         })
     }
@@ -219,8 +235,9 @@ export default class LineChartStore {
         runInAction(() => {
             this.interval = setInterval(() => {
                 this.get_frame();
-                console.log("interval...");
-            }, 100);
+                // console.log("interval...");
+                console.log(this.cnt++);
+            }, 50);
         });
     }
 
@@ -229,6 +246,7 @@ export default class LineChartStore {
         clearInterval(this.interval);
         runInAction(() => {
             this.interval = null;
+            this.cnt = 0;
         });
     }
 
@@ -302,10 +320,24 @@ export default class LineChartStore {
         // console.log("4: ", this.index_of_freq);
         // console.log("xTmpData: ", this.xTmpData.length);
         // console.log("yTmpData: ", this.yTmpData.length);
-        this.yData1 = this.yTmpData.slice(0); // 副本
-        this.xData1 = [];
-        for(let i = 0; i < this.xTmpData.length; i++) {
-            this.xData1.push(Number.parseInt(this.xTmpData[i].toString()));
+
+        // 抽取点数, 必须保留第一个点和最后一个点
+        let valid_left = 1, valid_right = this.xTmpData.length - 2;
+        let ret = extract(this.xTmpData, this.yTmpData, INTVL, 
+                valid_left, valid_right, this.ext_type);
+        // console.log(ret);
+
+        this.xData1 = [this.xTmpData[0].toNumber()];
+        for(let i = 0; i < ret.ext_x_data.length; i++) {
+            // this.xData1.push(Number.parseInt(ret.ext_x_data.toString()));
+            this.xData1.push(ret.ext_x_data[i].toNumber())
         }
+        this.xData1.push(this.xTmpData[this.xTmpData.length-1].toNumber());
+        this.yData1 = [this.yTmpData[0], ...ret.ext_y_data, this.yTmpData[this.yTmpData.length-1]];
+    }
+
+    set_ext_type(ext_type) {
+        // console.log(ext_type);
+        this.ext_type = ext_type;
     }
 }
