@@ -3,7 +3,7 @@ const _1KHz = 1000;
 const _1MHz = _1KHz * _1KHz;
 const start = 100 * _1MHz;
 const end = 9000 * _1MHz;
-const step = 500 * _1KHz;
+const step = 100 * _1KHz;
 let cnt = 1; // 奇偶次数反转
 
 export function create_frame(cb) {
