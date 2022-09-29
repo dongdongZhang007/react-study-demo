@@ -29,11 +29,18 @@ export default class LineChartStore {
     ext_type = 'max'; // 抽取类型
     pieceData;
     cnt = 1;
+    showMax = false;
+    markerData = [{
+        type: 'max',
+        value: 0,
+        valueIndex: 1,
+    }]; // 新增marker点
 
     constructor(rootStore) {
         this.rootStore = rootStore;
-        this.xData = [];
-        this.yData = [];
+        // this.xData = [];
+        // this.yData = [];
+        this.xyData = [];
         this.pieceData = [];
         this.xData1 = [];
         this.yData1 = [];
@@ -41,13 +48,16 @@ export default class LineChartStore {
         this.interval = null; // 设置定时器
 
         makeObservable(this, {
-            xData: observable,
-            yData: observable,
+            // xData: observable,
+            // yData: observable,
+            xyData: observable,
             xData1: observable,
             yData1: observable,
             ext_type: observable,
             interval: observable,
             pieceData: observable,
+            showMax: observable,
+            markerData: observable,
             getChartOpt: computed,
             getChartOpt2: computed,
             get_frame: action.bound,
@@ -55,20 +65,42 @@ export default class LineChartStore {
             clearTimeOut: action.bound,
             parse_data: action.bound,
             set_ext_type: action.bound, // 设置数据抽样类型
+            toggle_max: action.bound,
+            add_marker: action.bound,
         });
     }
 
     get getChartOpt() {
-        let xData = this.xData, yData = this.yData;
+        let _this = this;
         let opt = {
+            grid: {
+                show: true,
+                containLabel: true,
+                borderColor: 'red',
+                borderWidth: 2,
+                left: 0,
+                bottom: 0,
+            },
+            toolbox: {
+                feature: {
+                    myTool1: {
+                        show: true,
+                        title: '开启最大值',
+                        icon: 'path://M432.45,595.444c0,2.177-4.661,6.82-11.305,6.82c-6.475,0-11.306-4.567-11.306-6.82s4.852-6.812,11.306-6.812C427.841,588.632,432.452,593.191,432.45,595.444L432.45,595.444z M421.155,589.876c-3.009,0-5.448,2.495-5.448,5.572s2.439,5.572,5.448,5.572c3.01,0,5.449-2.495,5.449-5.572C426.604,592.371,424.165,589.876,421.155,589.876L421.155,589.876z M421.146,591.891c-1.916,0-3.47,1.589-3.47,3.549c0,1.959,1.554,3.548,3.47,3.548s3.469-1.589,3.469-3.548C424.614,593.479,423.062,591.891,421.146,591.891L421.146,591.891zM421.146,591.891',
+                        onclick: function () {
+                            _this.toggle_max();
+                        }
+                    },
+                }
+            },
             legend: {
                 data: [
                     "PSCAN频谱点图",
                 ],
             },
             xAxis: {
-                type: "category",
-                data: xData,
+                type: "value",
+                // data: xData,
                 name: '频率/MHz',
                 nameLocation: "center",
                 nameTextStyle: {
@@ -79,7 +111,9 @@ export default class LineChartStore {
                     formatter: function(value) {
                         return value / _1MHz
                     }
-                }
+                },
+                min: 100000000,
+                max: 9000000000,
             },
             yAxis: [
                 { type: "value" },
@@ -202,17 +236,60 @@ export default class LineChartStore {
             series: [
                 {
                     name: "PSCAN频谱点图",
-                    data: yData,
+                    data: this.xyData,
                     yAxisIndex: 1,
                     type: "line",
                     smooth: true,
                     showSymbol: false, // 未显示圆点
+                    markPoint: {
+                        symbol: "pin",
+                        symbolSize: 40, // marker点的大小
+                        label: {
+                            show: true,
+                            position: 'top',
+                            color: '#000',
+                        },
+                        data: this.markerData,
+                        itemStyle: {
+                            color: 'red',
+                            opacity: this.showMax ? 1 : 0, // 控制marker点的显隐
+                        },
+                    }
                 }
             ],
         };
         // console.log("getChartOpt => ", opt);
 
         return opt;
+    }
+
+    toggle_max() {
+        // console.log("toggle_max");
+        runInAction(() => {
+            this.showMax = !this.showMax;
+        });
+    }
+
+    add_marker(point) {
+        // console.log("addMarker", point);
+        runInAction(() => {
+            const [x, y] = point
+            // 当前markerData中是否包含point
+            let idx = this.markerData.findIndex(item => item.xAxis === x);
+            if(idx === -1) {
+                this.markerData = [...this.markerData, {
+                    value: this.markerData.length+1, 
+                    xAxis: x,
+                    yAxis: y,
+                }];
+                console.log("add");
+            } 
+            else {
+                this.markerData.splice(idx, 1);
+                this.markerData = [...this.markerData];
+                console.log("remove");
+            }
+        })
     }
 
     get getChartOpt2() {
@@ -303,9 +380,25 @@ export default class LineChartStore {
                 let valid_left = 1, valid_right = x.length - 2;
                 let ret = extract(x, y, INTVL, valid_left, valid_right, this.ext_type);
                 // console.log(ret);
-                this.xData = [x[0], ...ret.ext_x_data, x[x.length-1]];
-                this.yData = [y[0], ...ret.ext_y_data, y[y.length-1]];
+                // this.xData = [x[0], ...ret.ext_x_data, x[x.length-1]];
+                // this.yData = [y[0], ...ret.ext_y_data, y[y.length-1]];
                 // console.log(this.xData[this.xData.length-1] + ", " + this.yData[this.yData.length-1]);
+                this.xyData = [[x[0], y[0]]];
+                for(let i = 0; i < ret.ext_x_data.length; i++) {
+                    this.xyData.push([ret.ext_x_data[i], ret.ext_y_data[i]]);
+                }
+                this.xyData.push([x[x.length-1], y[y.length-1]]);
+
+                //  更新marker点
+                this.markerData.forEach((marker) => {
+                    if(marker.xAxis) {
+                        let idx = ret.ext_x_data.findIndex(data => data >= marker.xAxis);
+                        if(idx > -1) {
+                            marker.value = ret.ext_y_data[idx];
+                            marker.yAxis = ret.ext_y_data[idx];
+                        }
+                    }
+                })
             });
         })
     }
@@ -315,7 +408,7 @@ export default class LineChartStore {
             this.interval = setInterval(() => {
                 this.get_frame();
                 // console.log("interval...");
-                console.log(this.cnt++);
+                // console.log(this.cnt++);
             }, 50);
         });
     }

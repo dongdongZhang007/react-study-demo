@@ -6,10 +6,16 @@ import {
   Link
 } from "react-router-dom";
 // import logo from './logo.svg';
-// import './App.css';
+import './App.css';
 import Counter from './components/Counter';
 import LineChart from './components/LineChart';
 import ShoppingCart from './components/ShoppingCart';
+
+function Home() {
+  return (<>
+    <LineChart/>
+  </>)
+}
 
 function App() {
   return (
@@ -19,7 +25,7 @@ function App() {
         <Link to="./counter">计数器案例</Link>
       </div>
       <Switch>
-        <Route path="/" component={LineChart}></Route>
+        <Route path="/" component={Home}></Route>
         <Route path="/cart" component={ShoppingCart}></Route>
         <Route path="/counter" component={Counter}></Route>
       </Switch>
