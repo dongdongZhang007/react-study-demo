@@ -10,9 +10,11 @@ import './App.css';
 import Counter from './components/Counter';
 import LineChart from './components/LineChart';
 import ShoppingCart from './components/ShoppingCart';
+import AudioView from './components/AudioView';
 
 function Home() {
   return (<>
+    <AudioView/>
     <LineChart/>
   </>)
 }
