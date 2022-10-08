@@ -67,3 +67,8 @@
  border-color: #66b1ff;
  color: #fff;
   }
+
+.canvas-box {
+  height: 300px;
+  width: 1000px;
+}
