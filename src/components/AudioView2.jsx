@@ -21,7 +21,6 @@ const AudioView = observer(class AudioView extends React.Component {
     canvasCtx = null;
     boxWidth = 0;
     boxHeight = 0;
-    startTime = 0;
 
     constructor(props) {
         super(props);
@@ -75,8 +74,9 @@ const AudioView = observer(class AudioView extends React.Component {
         this.audioCxt.onstatechange = function () {
             console.log(_this.audioCxt.state);
         };
-        // // 创建一个 AudioBufferSourceNode 对象，使用 AudioContext 的工厂函数创建
-        // this.audioNode = this.audioCxt.createBufferSource();
+
+        // 创建一个 AudioBufferSourceNode 对象，使用 AudioContext 的工厂函数创建
+        this.audioNode = this.audioCxt.createBufferSource();
 
         // 创建一个控制音量大小的节点对象
         this.gainNode = this.audioCxt[this.audioCxt.createGain?"createGain":"createGainNode"]();
@@ -155,69 +155,52 @@ const AudioView = observer(class AudioView extends React.Component {
         offset += 4;
         console.log("SubChunk2Size", SubChunk2Size);
 
-        const step = 4096, pieces = Math.ceil((chunkSize - offset) / step);
-        let p = 1;
-        while(p < pieces) {
-            let newOffset = offset + (p - 1) * step;
-            const frameCount = (function(size, blockAlign){
-                return size / blockAlign;
-            })(step, BlockAlign);
-            // console.log(frameCount);
+        const frameCount = (function(size, blockAlign){
+            return size / blockAlign;
+        })(chunkSize - offset, BlockAlign);
+        console.log(frameCount);
+        // https://developer.mozilla.org/zh-CN/docs/Web/API/AudioBuffer
+        // let audioBuffer = audioCxt.createBuffer(NumChannnels, frameCount, SampleRate);
+        let audioBuffer = this.audioCxt.createBuffer(NumChannnels, frameCount, SampleRate);
 
-            // https://developer.mozilla.org/zh-CN/docs/Web/API/AudioBuffer
-            // let audioBuffer = audioCxt.createBuffer(NumChannnels, frameCount, SampleRate);
-            let audioBuffer = this.audioCxt.createBuffer(NumChannnels, frameCount, SampleRate);
-            // console.log(audioBuffer);
-
-            // 创建一个 AudioBufferSourceNode 对象，使用 AudioContext 的工厂函数创建
-            this.audioNode = this.audioCxt.createBufferSource();
-    
-            // https://blog.csdn.net/zhihu008/article/details/7854529
-            // 16bit 单声道 8bit 单声道
-            if(NumChannnels === 1) {
-                let nowBuffering = audioBuffer.getChannelData(0);
-                let j = 0, i = 0;
-                while(i < step) {
-                    if(BitsPerSample === 8) {
-                        nowBuffering[j++] = dv.getInt8(newOffset + i) / 256;
-                        i++;
-                    } else if(BitsPerSample === 16) {
-                        nowBuffering[j++] = dv.getInt16(newOffset + i, IsLittleEndian)/65536;
-                        i += 2;
-                    }
-                }
-                // console.log(nowBuffering);
-            }
-
-            // 16bit 双声道
-            if(BitsPerSample === 16 && NumChannnels === 2) {
-                let leftBuffer = audioBuffer.getChannelData(0);
-                let rightBuffer = audioBuffer.getChannelData(1);
-                let j = 0, i = 0;
-
-                while(i < step) {
-                    leftBuffer[j] = dv.getInt16(newOffset + i, IsLittleEndian)/65536;
+        // https://blog.csdn.net/zhihu008/article/details/7854529
+        // 16bit 单声道 8bit 单声道
+        if(NumChannnels === 1) {
+            let nowBuffering = audioBuffer.getChannelData(0);
+            let j = 0, i = offset;
+            while(i < dv.byteLength) {
+                if(BitsPerSample === 8) {
+                    nowBuffering[j++] = dv.getInt8(i) / 256;
+                    i++;
+                } else if(BitsPerSample === 16) {
+                    nowBuffering[j++] = dv.getInt16(i, IsLittleEndian)/65536;
                     i += 2;
-                    rightBuffer[j] = dv.getInt16(newOffset + i, IsLittleEndian)/65536;
-                    i += 2;
-                    j++;
                 }
             }
-
-            if (this.startTime < this.audioCxt.currentTime) {
-                this.startTime = this.audioCxt.currentTime
-            }
-            // console.log('start vs current ' + this.startTime + ' vs ' + this.audioCxt.currentTime + ' duration: ' + audioBuffer.duration);
-            this.audioNode.buffer = audioBuffer;
-            // console.log("without header parse:", audioBuffer);
-            this.audioNode.connect(this.analyserNode);
-            // 从 startTime 开始播放 https://www.npmjs.com/package/pcm-player
-            this.audioNode[this.audioNode.start?"start":"noteOn"](this.startTime);
-            this.startTime += audioBuffer.duration
-
-            this.visualizer();
-            p++;
+            // console.log(nowBuffering);
         }
+
+        // 16bit 双声道
+        if(BitsPerSample === 16 && NumChannnels === 2) {
+            let leftBuffer = audioBuffer.getChannelData(0);
+            let rightBuffer = audioBuffer.getChannelData(1);
+            let j = 0, i = offset;
+
+            while(i < dv.byteLength) {
+                leftBuffer[j] = dv.getInt16(i, IsLittleEndian)/65536;
+                i += 2;
+                rightBuffer[j] = dv.getInt16(i, IsLittleEndian)/65536;
+                i += 2;
+                j++;
+            }
+        }
+
+        this.audioNode.buffer = audioBuffer;
+        console.log("without header parse:", audioBuffer);
+        this.audioNode.connect(this.analyserNode);
+        // 从 0s 开始播放
+        this.audioNode[this.audioNode.start?"start":"noteOn"](0);
+        this.visualizer();
     }
 
     visualizer() {
@@ -304,7 +287,7 @@ const AudioView = observer(class AudioView extends React.Component {
     }
 
     createCanvas() {
-        this.canvasBox = document.getElementById('canvasBox');
+        this.canvasBox = document.getElementById('canvasBox1');
         this.canvasDom = document.createElement("canvas");
         this.canvasBox.appendChild(this.canvasDom);
         this.canvasCtx = this.canvasDom.getContext("2d");
@@ -344,7 +327,7 @@ const AudioView = observer(class AudioView extends React.Component {
                         this.playMusic1(event.target)
                     }} />
                 </div>
-                <div className="canvas-box" id="canvasBox"></div>
+                <div className="canvas-box" id="canvasBox1"></div>
                 <audio className="audio-node" autoPlay></audio>
             </div>
         )
